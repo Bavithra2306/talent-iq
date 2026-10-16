@@ -6,8 +6,7 @@ from src.data.clients.postgres import AsyncSessionLocal
 from src.data.models.role import Role
 
 
-ROLES = ["recruiter", "hiring_manager", "admin"]
-
+ROLES = ["admin", "hiring_manager", "recruiter"]
 
 async def seed_roles() -> None:
     async with AsyncSessionLocal() as db:

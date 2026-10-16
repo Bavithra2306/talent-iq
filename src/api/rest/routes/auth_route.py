@@ -4,13 +4,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.data.clients.postgres import get_db
 from src.api.rest.handlers.auth_handler import (
-    signup_handler,
     login_handler,
 )
-from src.api.rest.schemas.signup_schema import (
-    SignupRequest,
-    SignupResponse,
-)
+
 from src.api.rest.schemas.login_schema import (
     LoginRequest,
     LoginResponse,
@@ -39,20 +35,36 @@ from src.api.rest.schemas.reset_password_schema import (
     ResetPasswordResponse,
 )
 
+from src.api.rest.schemas.invitation_schema import (
+    AcceptInvitationRequest,
+    AcceptInvitationResponse,
+)
+from src.core.services.invitation_service import accept_invitation
+
+
 
 AuthRouter = APIRouter(prefix="/auth", tags=["Authentication"])
 
-# For SignUP
+#For confirm password and Register
 @AuthRouter.post(
-    "/signup",
-    response_model=SignupResponse,
-    status_code=201,
+    "/accept-invitation",
+    response_model=AcceptInvitationResponse,
 )
-async def signup(
-    data: SignupRequest,
+async def accept_user_invitation(
+    data: AcceptInvitationRequest,
     db: AsyncSession = Depends(get_db),
 ):
-    return await signup_handler(data=data, db=db)
+    await accept_invitation(
+        db=db,
+        token=data.token,
+        password=data.password,
+        confirm_password=data.confirm_password,
+    )
+
+    return AcceptInvitationResponse(
+        message="Invitation accepted. You can now log in.",
+    )
+
 
 #for LogIN
 @AuthRouter.post(

@@ -3,39 +3,35 @@ from fastapi import HTTPException, Response, status
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from src.api.rest.schemas.signup_schema import (
-    SignupRequest,
-    SignupResponse,
-)
 from src.api.rest.schemas.login_schema import (
     LoginRequest,
     LoginResponse,
 )
-from src.services.auth_service import signup_user, login_user
+from src.core.services.auth_service import login_user
 
 
 # for Refresh handler
 from fastapi import Cookie
 from src.api.rest.schemas.refresh_schema import RefreshResponse
-from src.services.jwt_service import create_access_token
-from src.services.refresh_token_service import validate_refresh_token
+from src.core.services.jwt_service import create_access_token
+from src.core.services.refresh_token_service import validate_refresh_token
 
 # For logout handler
 from src.api.rest.schemas.logout_schema import LogoutResponse
-from src.services.refresh_token_service import revoke_token, revoke_user_tokens
+from src.core.services.refresh_token_service import revoke_token, revoke_user_tokens
 
 #
 import secrets
 from datetime import datetime, timedelta, timezone
 
 from src.data.repositories.user_repository import get_user_by_email
-from src.services.password_service import hash_password, verify_password
+from src.core.services.password_service import hash_password, verify_password
 from src.api.rest.schemas.forgot_password_schema import (
     ForgotPasswordRequest,
     ForgotPasswordResponse,
 )
 
-from src.services.email_service import send_otp_email
+from src.core.services.email_service import send_otp_email
 
 
 from src.api.rest.schemas.reset_password_schema import (
@@ -78,34 +74,7 @@ def set_auth_cookies(
         path="/",
     )
 
-# For signup
-async def signup_handler(
-    data: SignupRequest,
-    db: AsyncSession,
-) -> SignupResponse:
-    try:
-        user = await signup_user(
-            db=db,
-            name=data.name,
-            email=str(data.email),
-            password=data.password,
-            contact=data.contact,
-            location=data.location,
-        )
-        return SignupResponse(id=user.id)
 
-    except ValueError as exc:
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT,
-            detail=str(exc),
-        ) from exc
-
-    except IntegrityError as exc:
-        await db.rollback()
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT,
-            detail="An account with those details may already exist.",
-        ) from exc
 
 #for login 
 async def login_handler(

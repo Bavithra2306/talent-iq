@@ -14,6 +14,9 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from src.data.models.base import Base
 
+from sqlalchemy import Enum
+from src.constants.user_status_enum import UserStatus
+
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from src.data.models.role import Role
@@ -27,7 +30,7 @@ class User(Base):
         primary_key=True,
         default=uuid.uuid4,
     )
-    name: Mapped[str] = mapped_column(String, nullable=False)
+    name: Mapped[str] = mapped_column(String, nullable=True)
     contact: Mapped[str | None] = mapped_column(String, unique=True, nullable=True)
     email: Mapped[str] = mapped_column(
         String,
@@ -35,19 +38,44 @@ class User(Base):
         unique=True,
         index=False,
     )
+    
+    status: Mapped[UserStatus] = mapped_column(
+    Enum(
+        UserStatus,
+        name="user_status",
+        values_callable=lambda enum_cls: [
+            member.value for member in enum_cls
+        ],
+    ),
+    nullable=False,
+    default=UserStatus.ACTIVE,
+    server_default=text("'active'"),
+    )
+    
+    invite_link: Mapped[str | None] = mapped_column(
+    String,
+    nullable=True,
+    )
+
+    invite_expires_at: Mapped[DateTime | None] = mapped_column(
+    DateTime(timezone=True),
+    nullable=True,
+    )
+    
     location: Mapped[str | None] = mapped_column(String, nullable=True)
     role_id: Mapped[uuid.UUID] = mapped_column(
         Uuid,
         ForeignKey("roles.id"),
         nullable=False,
     )
-    password_hash: Mapped[str] = mapped_column(String, nullable=False)
+    password_hash: Mapped[str] = mapped_column(String, nullable=True)
 
     otp_hash: Mapped[str | None] = mapped_column(String, nullable=True)
     otp_exp: Mapped[DateTime | None] = mapped_column(
         DateTime(timezone=True),
         nullable=True,
     )
+    
 
     is_active: Mapped[bool] = mapped_column(
         Boolean,

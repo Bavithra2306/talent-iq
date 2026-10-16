@@ -14,6 +14,7 @@ def hash_password(password: str) -> str:
     return _password_hasher.hash(password)
 
 
+
 def verify_password(
     plain_password: str,
     hashed_password: str,

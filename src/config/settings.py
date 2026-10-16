@@ -21,6 +21,9 @@ class Settings(BaseSettings):
     smtp_password: str
     smtp_from_email: str
 
+    
+    invite_accept_url: str = "http://localhost:3000/accept-invitation"
+
 
     model_config = SettingsConfigDict(
         env_file=".env",
