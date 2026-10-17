@@ -1,0 +1,17 @@
+
+.env
+.env.*
+!.env.examples
+
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+
+.git/
+.vscode/
+
+uploads/
+storage/
+sample_resumes/
+
