@@ -39,6 +39,17 @@ async def get_user_by_id(
     return await db.get(User, user_id)
 
 
+async def get_role_name(
+    db: AsyncSession,
+    role_id: UUID,
+) -> str:
+    """Return the role name (admin / hiring_manager / recruiter) for a role id."""
+    result = await db.execute(
+        select(Role.role).where(Role.id == role_id)
+    )
+    return result.scalar_one()
+
+
 async def create_user(
     db: AsyncSession,
     name: str,

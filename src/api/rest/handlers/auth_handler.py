@@ -15,6 +15,7 @@ from fastapi import Cookie
 from src.api.rest.schemas.refresh_schema import RefreshResponse
 from src.core.services.jwt_service import create_access_token
 from src.core.services.refresh_token_service import validate_refresh_token
+from src.data.repositories.user_repository import get_role_name, get_user_by_id
 
 # For logout handler
 from src.api.rest.schemas.logout_schema import LogoutResponse
@@ -139,7 +140,16 @@ async def refresh_handler(
                 detail="Refresh token is invalid or expired. Please log in again.",
             )
 
-        access_token = create_access_token(token_record.user_id)
+        user = await get_user_by_id(db, token_record.user_id)
+        if user is None or not user.is_active:
+            await db.rollback()
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="This account is unavailable.",
+            )
+
+        role_name = await get_role_name(db, user.role_id)
+        access_token = create_access_token(user.id, role_name)
 
         response.set_cookie(
             key="access_token",

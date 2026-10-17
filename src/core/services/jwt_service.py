@@ -8,13 +8,17 @@ from jwt.exceptions import InvalidTokenError
 from src.config.settings import settings
 
 
-def create_access_token(user_id: UUID) -> str:
-    """Create a signed JWT access token for a user."""
+def create_access_token(user_id: UUID, role: str) -> str:
+    """Create a signed JWT access token for a user.
+
+    The role claim lets other services (talent-iq-core) authorize without a DB lookup.
+    """
 
     now = datetime.now(timezone.utc)
 
     payload = {
         "sub": str(user_id),
+        "role": role,
         "iat": now,
         "exp": now + timedelta(
             minutes=settings.access_token_expire_minutes

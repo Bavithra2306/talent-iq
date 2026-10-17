@@ -4,6 +4,7 @@ from uuid import UUID
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.data.repositories.user_repository import (
+    get_role_name,
     get_user_by_email,
     update_last_login,
 )
@@ -43,7 +44,8 @@ async def login_user(
 
     await update_last_login(db, user)
 
-    access_token = create_access_token(user.id)
+    role_name = await get_role_name(db, user.role_id)
+    access_token = create_access_token(user.id, role_name)
     refresh_token = await issue_refresh_token(db, user.id)
 
     await db.commit()
