@@ -69,6 +69,7 @@ async def create_invitation(
         f"{settings.invite_accept_url}"
         f"?token={raw_token}"
     )
+    
 
     try:
         # Send first so a mail failure doesn't leave a committed
