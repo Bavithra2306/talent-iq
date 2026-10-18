@@ -1,8 +1,6 @@
 
 from pydantic import BaseModel, EmailStr, Field
 
-from src.schemas.user_schema import UserRead
-
 
 class LoginRequest(BaseModel):
     email: EmailStr

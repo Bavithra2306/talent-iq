@@ -2,16 +2,17 @@
 from fastapi import APIRouter, Depends, HTTPException, Response, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from src.api.dependencies.auth_dependency import get_current_admin
+from src.api.rest.dependencies import get_current_admin
 from src.api.rest.handlers.auth_handler import login_handler
-from src.api.rest.schemas.login_schema import LoginRequest, LoginResponse
 from src.api.rest.schemas.invitation_schema import (
     InvitationRequest,
     InvitationResponse,
 )
+from src.api.rest.schemas.login_schema import LoginRequest, LoginResponse
 from src.core.services.invitation_service import create_invitation
 from src.data.clients.postgres import get_db
 from src.data.models.user import User
+from src.observability.metrics import metrics
 
 AdminRouter = APIRouter(
     prefix="/internal",
@@ -65,3 +66,13 @@ async def invite_user(
     return InvitationResponse(
         message="Invitation sent again with a new link." if resent else "Invitation sent successfully.",
     )
+
+
+@AdminRouter.get(
+    "/metrics",
+    summary="Request metrics",
+    description="Request counts, error counts and latency per route since the service started.",
+)
+async def request_metrics(_: User = Depends(get_current_admin)):
+    """Per-route request statistics (admins only)."""
+    return metrics.snapshot()

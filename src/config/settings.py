@@ -6,6 +6,15 @@ class Settings(BaseSettings):
     app_name: str = "TalentIQ Auth"
     app_env: str = "development"
     debug: bool = True
+
+    # Server logs: JSON lines on stdout (see src/observability/logging).
+    log_level: str = "INFO"
+    log_json: bool = True
+
+    # Requests per client IP per minute (0 = no limit). "Heavy" = sign-in and
+    # password endpoints, kept low to slow down password guessing.
+    rate_limit_per_minute: int = 600
+    rate_limit_heavy_per_minute: int = 10
     database_url: str
     jwt_secret_key: str
     jwt_algorithm: str = "HS256"

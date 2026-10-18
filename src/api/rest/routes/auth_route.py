@@ -1,54 +1,46 @@
 
-from fastapi import APIRouter, Depends, Response
+#for Refresh token
+from fastapi import APIRouter, Cookie, Depends, HTTPException, Response, status
+from sqlalchemy import func
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from src.data.clients.postgres import get_db
-from src.api.rest.handlers.auth_handler import (
-    login_handler,
-)
-
-from src.api.rest.schemas.login_schema import (
-    LoginRequest,
-    LoginResponse,
-)
-
-#for Refresh token
-
-from fastapi import Cookie
-from src.api.rest.handlers.auth_handler import refresh_handler
-from src.api.rest.schemas.refresh_schema import RefreshResponse
+from src.api.rest.dependencies import get_current_user as current_user_dependency
 
 # for logout route
-from src.api.rest.handlers.auth_handler import logout_handler
-from src.api.rest.schemas.logout_schema import LogoutResponse
-
 # Forgot_password route
-from src.api.rest.handlers.auth_handler import forgot_password_handler
+from src.api.rest.handlers.auth_handler import (
+    forgot_password_handler,
+    login_handler,
+    logout_handler,
+    refresh_handler,
+    reset_password_handler,
+)
+from src.api.rest.schemas.current_user_schema import (
+    CurrentUserResponse,
+    ProfileUpdateRequest,
+)
 from src.api.rest.schemas.forgot_password_schema import (
     ForgotPasswordRequest,
     ForgotPasswordResponse,
 )
-
-from src.api.rest.handlers.auth_handler import reset_password_handler
-from src.api.rest.schemas.reset_password_schema import (
-    ResetPasswordRequest,
-    ResetPasswordResponse,
-)
-
 from src.api.rest.schemas.invitation_schema import (
     AcceptInvitationRequest,
     AcceptInvitationResponse,
 )
+from src.api.rest.schemas.login_schema import (
+    LoginRequest,
+    LoginResponse,
+)
+from src.api.rest.schemas.logout_schema import LogoutResponse
+from src.api.rest.schemas.refresh_schema import RefreshResponse
+from src.api.rest.schemas.reset_password_schema import (
+    ResetPasswordRequest,
+    ResetPasswordResponse,
+)
 from src.core.services.invitation_service import accept_invitation
-
-from src.api.rest.schemas.current_user_schema import CurrentUserResponse, ProfileUpdateRequest
-from src.api.dependencies.auth_dependency import get_current_user as current_user_dependency
-from sqlalchemy import func
-from sqlalchemy.exc import IntegrityError
-from fastapi import Cookie, Depends, HTTPException, status
+from src.data.clients.postgres import get_db
 from src.data.models.user import User
-
-
 
 AuthRouter = APIRouter(prefix="/auth", tags=["Authentication"])
 

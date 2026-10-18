@@ -54,8 +54,8 @@ async def login_user(
     if not admin_portal and role_name == "admin":
         raise WrongPortalError("Admins sign in on the admin sign-in page.")
 
-    # The first successful login activates a pending account.
-    if user.status == UserStatus.PENDING:
+    # The first successful login activates an accepted invitation.
+    if user.status == UserStatus.ACCEPTED:
         user.status = UserStatus.ACTIVE
 
     await update_last_login(db, user)

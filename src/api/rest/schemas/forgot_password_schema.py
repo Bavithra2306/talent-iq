@@ -1,7 +1,7 @@
 
-from pydantic import BaseModel, EmailStr, Field, StringConstraints
 from typing import Annotated
 
+from pydantic import BaseModel, EmailStr, Field, StringConstraints
 
 OTP = Annotated[str, StringConstraints(pattern=r"^[0-9]{6}$")]
 

@@ -3,7 +3,7 @@ from fastapi import APIRouter, Depends, Query
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from src.api.dependencies.auth_dependency import get_current_user
+from src.api.rest.dependencies import get_current_user
 from src.api.rest.schemas.user_directory_schema import DirectoryUser
 from src.constants.user_status_enum import UserStatus
 from src.data.clients.postgres import get_db

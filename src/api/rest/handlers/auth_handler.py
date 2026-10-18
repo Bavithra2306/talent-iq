@@ -1,50 +1,46 @@
 
-from fastapi import HTTPException, Response, status
-from sqlalchemy.exc import IntegrityError
-from sqlalchemy.ext.asyncio import AsyncSession
-
-from src.api.rest.schemas.login_schema import (
-    LoginRequest,
-    LoginResponse,
-)
-from src.core.services.auth_service import WrongPortalError, login_user
-
-
-# for Refresh handler
-from fastapi import Cookie
-from src.api.rest.schemas.refresh_schema import RefreshResponse
-from src.core.services.jwt_service import create_access_token
-from src.core.services.refresh_token_service import validate_refresh_token
-from src.data.repositories.user_repository import get_role_name, get_user_by_id
-
-# For logout handler
-from src.api.rest.schemas.logout_schema import LogoutResponse
-from src.core.services.refresh_token_service import revoke_token, revoke_user_tokens
+import logging
 
 #
 import secrets
 from datetime import datetime, timedelta, timezone
 
-from src.data.repositories.user_repository import get_user_by_email
-from src.core.services.password_service import hash_password, verify_password
+# for Refresh handler
+from fastapi import Cookie, HTTPException, Response, status
+from sqlalchemy.exc import IntegrityError
+from sqlalchemy.ext.asyncio import AsyncSession
+
 from src.api.rest.schemas.forgot_password_schema import (
     ForgotPasswordRequest,
     ForgotPasswordResponse,
 )
+from src.api.rest.schemas.login_schema import (
+    LoginRequest,
+    LoginResponse,
+)
 
-from src.core.services.email_service import send_otp_email
-
-
+# For logout handler
+from src.api.rest.schemas.logout_schema import LogoutResponse
+from src.api.rest.schemas.refresh_schema import RefreshResponse
 from src.api.rest.schemas.reset_password_schema import (
     ResetPasswordRequest,
     ResetPasswordResponse,
 )
+from src.core.services.auth_service import WrongPortalError, login_user
+from src.core.services.email_service import send_otp_email
+from src.core.services.jwt_service import create_access_token
+from src.core.services.password_service import hash_password, verify_password
+from src.core.services.refresh_token_service import (
+    revoke_token,
+    revoke_user_tokens,
+    validate_refresh_token,
+)
 from src.data.repositories.user_repository import (
+    get_role_name,
     get_user_by_email,
+    get_user_by_id,
     update_password,
 )
-
-import logging
 
 logger = logging.getLogger(__name__)
 
