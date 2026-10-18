@@ -9,3 +9,4 @@ class DirectoryUser(BaseModel):
     name: str | None
     email: str
     role: str
+    status: str

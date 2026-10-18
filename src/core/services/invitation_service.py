@@ -26,11 +26,14 @@ async def create_invitation(
     email: str,
     role_name: str,
     admin: User,
-) -> None:
+) -> bool:
+    """Invite someone by email. If they were invited before but haven't accepted,
+    the invitation is sent again with a fresh link (the old link stops working).
+    Returns True when it was a resend."""
     email = email.strip().lower()
 
     existing_user = await get_user_by_email(db, email)
-    if existing_user is not None:
+    if existing_user is not None and existing_user.status != UserStatus.INVITE_SENT:
         raise HTTPException(
             status_code=409,
             detail="An account with this email already exists.",
@@ -51,19 +54,24 @@ async def create_invitation(
     token_hash = hash_invitation_token(raw_token)
     expires_at = datetime.now(timezone.utc) + timedelta(hours=48)
 
-    user = User(
-        name=None,
-        email=email,
-        password_hash=None,
-        role_id=role.id,
-        status=UserStatus.INVITE_SENT,
-        invite_link=token_hash,
-        invite_expires_at=expires_at,
-        is_active=True,
-        created_by=admin.id,
-    )
-
-    db.add(user)
+    if existing_user is not None:
+        # Resend: new link and expiry; the role can be corrected at the same time.
+        existing_user.role_id = role.id
+        existing_user.invite_link = token_hash
+        existing_user.invite_expires_at = expires_at
+        existing_user.updated_by = admin.id
+    else:
+        db.add(User(
+            name=None,
+            email=email,
+            password_hash=None,
+            role_id=role.id,
+            status=UserStatus.INVITE_SENT,
+            invite_link=token_hash,
+            invite_expires_at=expires_at,
+            is_active=True,
+            created_by=admin.id,
+        ))
 
     invitation_url = (
         f"{settings.invite_accept_url}"
@@ -82,6 +90,7 @@ async def create_invitation(
     except Exception:
         await db.rollback()
         raise
+    return existing_user is not None
 
 
 async def accept_invitation(

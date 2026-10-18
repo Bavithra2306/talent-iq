@@ -17,22 +17,25 @@ UserRouter = APIRouter(prefix="/users", tags=["Users"])
 async def user_directory(
     role: str | None = Query(default=None, description="admin / hiring_manager / recruiter"),
     db: AsyncSession = Depends(get_db),
-    _: User = Depends(get_current_user),
+    current: User = Depends(get_current_user),
 ):
     """Active users (optionally of one role), e.g. so a recruiter can pick a hiring manager.
 
-    Users who have not accepted their invitation yet are left out.
+    Admins also see people who haven't accepted their invitation yet (status
+    "invite_sent"), so they can resend it; everyone else sees only real accounts.
     """
     query = (
-        select(User.id, User.name, User.email, Role.role)
+        select(User.id, User.name, User.email, Role.role, User.status)
         .join(Role, Role.id == User.role_id)
-        .where(User.is_active.is_(True), User.status != UserStatus.INVITE_SENT)
+        .where(User.is_active.is_(True))
         .order_by(User.name, User.email)
     )
+    if current.role.role != "admin":
+        query = query.where(User.status != UserStatus.INVITE_SENT)
     if role:
         query = query.where(Role.role == role)
     rows = await db.execute(query)
     return [
-        DirectoryUser(id=user_id, name=name, email=email, role=role_name)
-        for user_id, name, email, role_name in rows.all()
+        DirectoryUser(id=user_id, name=name, email=email, role=role_name, status=user_status.value)
+        for user_id, name, email, role_name, user_status in rows.all()
     ]

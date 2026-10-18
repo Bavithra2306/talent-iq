@@ -48,7 +48,7 @@ async def invite_user(
     admin: User = Depends(get_current_admin),
 ):
     try:
-        await create_invitation(
+        resent = await create_invitation(
             db=db,
             email=str(data.email),
             role_name=data.role,
@@ -63,5 +63,5 @@ async def invite_user(
         ) from exc
 
     return InvitationResponse(
-        message="Invitation sent successfully.",
+        message="Invitation sent again with a new link." if resent else "Invitation sent successfully.",
     )
