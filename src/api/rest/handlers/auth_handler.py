@@ -7,7 +7,7 @@ from src.api.rest.schemas.login_schema import (
     LoginRequest,
     LoginResponse,
 )
-from src.core.services.auth_service import login_user
+from src.core.services.auth_service import WrongPortalError, login_user
 
 
 # for Refresh handler
@@ -82,12 +82,14 @@ async def login_handler(
     data: LoginRequest,
     response: Response,
     db: AsyncSession,
+    admin_portal: bool = False,
 ) -> LoginResponse:
     try:
         result = await login_user(
             db=db,
             email=str(data.email),
             password=data.password,
+            admin_portal=admin_portal,
         )
 
         set_auth_cookies(
@@ -99,6 +101,13 @@ async def login_handler(
         return LoginResponse(
             message="Login successful.",
         )
+
+    except WrongPortalError as exc:
+        await db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail=str(exc),
+        ) from exc
 
     except ValueError as exc:
         raise HTTPException(

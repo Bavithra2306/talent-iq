@@ -1,8 +1,10 @@
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Response, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.api.dependencies.auth_dependency import get_current_admin
+from src.api.rest.handlers.auth_handler import login_handler
+from src.api.rest.schemas.login_schema import LoginRequest, LoginResponse
 from src.api.rest.schemas.invitation_schema import (
     InvitationRequest,
     InvitationResponse,
@@ -17,14 +19,22 @@ AdminRouter = APIRouter(
 )
 
 
-@AdminRouter.get("/")
-async def internal_dashboard(
-    admin: User = Depends(get_current_admin),
+@AdminRouter.post(
+    "/login",
+    response_model=LoginResponse,
+)
+async def admin_login(
+    data: LoginRequest,
+    response: Response,
+    db: AsyncSession = Depends(get_db),
 ):
-    return {
-        "message": "Welcome to the TalentIQ admin dashboard.",
-        "admin_email": admin.email,
-    }
+    """Admin sign-in. Only admins can sign in here; everyone else uses /auth/login."""
+    return await login_handler(
+        data=data,
+        response=response,
+        db=db,
+        admin_portal=True,
+    )
 
 
 @AdminRouter.post(

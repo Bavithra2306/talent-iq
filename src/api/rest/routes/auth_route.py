@@ -41,12 +41,12 @@ from src.api.rest.schemas.invitation_schema import (
 )
 from src.core.services.invitation_service import accept_invitation
 
-from src.api.rest.schemas.current_user_schema import CurrentUserResponse
+from src.api.rest.schemas.current_user_schema import CurrentUserResponse, ProfileUpdateRequest
+from src.api.dependencies.auth_dependency import get_current_user as current_user_dependency
+from sqlalchemy import func
+from sqlalchemy.exc import IntegrityError
 from fastapi import Cookie, Depends, HTTPException, status
-from sqlalchemy import select
 from src.data.models.user import User
-from src.core.services.jwt_service import decode_access_token
-from uuid import UUID
 
 
 
@@ -94,46 +94,55 @@ async def login(
     "/me",
     response_model=CurrentUserResponse,
 )
-async def get_current_user(
-    access_token: str | None = Cookie(default=None),
+async def get_my_profile(
+    user: User = Depends(current_user_dependency),
+):
+    """The signed-in user's profile, including their role name."""
+    return _profile(user)
+
+
+@AuthRouter.patch(
+    "/me",
+    response_model=CurrentUserResponse,
+)
+async def update_my_profile(
+    data: ProfileUpdateRequest,
+    user: User = Depends(current_user_dependency),
     db: AsyncSession = Depends(get_db),
 ):
-    if not access_token:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Authentication required.",
-        )
-
+    """Update your own name, phone number and location."""
+    for field, value in data.model_dump(exclude_unset=True).items():
+        setattr(user, field, value)
+    user.updated_at = func.now()
+    user.updated_by = user.id
     try:
-        payload = decode_access_token(access_token)
-        user_id = UUID(payload["sub"])
-    except (ValueError, KeyError, TypeError):
+        await db.commit()
+    except IntegrityError as exc:
+        await db.rollback()
         raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid or expired access token.",
-        )
+            status_code=status.HTTP_409_CONFLICT,
+            detail="That phone number is already used by another account.",
+        ) from exc
+    await db.refresh(user, attribute_names=["updated_at", "role"])
+    return _profile(user)
 
-    result = await db.execute(
-        select(User).where(User.id == user_id)
-    )
-    user = result.scalar_one_or_none()
 
-    if user is None or not user.is_active:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="User account is unavailable.",
-        )
-
+def _profile(user: User) -> CurrentUserResponse:
     return CurrentUserResponse(
         id=user.id,
         name=user.name,
         email=user.email,
         role_id=user.role_id,
+        role=user.role.role,
+        contact=user.contact,
+        location=user.location,
         status=user.status.value,
         is_active=user.is_active,
+        last_login_at=user.last_login_at,
+        created_at=user.created_at,
     )
 
-    
+
 # For new Access token
 
 @AuthRouter.post(

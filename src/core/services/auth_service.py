@@ -14,13 +14,23 @@ from src.core.services.refresh_token_service import issue_refresh_token
 
 from src.constants.user_status_enum import UserStatus
 
+class WrongPortalError(Exception):
+    """Correct password, but this sign-in page is not for the user's role."""
+
+
 #for login
 async def login_user(
     db: AsyncSession,
     email: str,
     password: str,
+    admin_portal: bool = False,
 ) -> dict:
-    """Authenticate an active account and issue its tokens."""
+    """Authenticate an active account and issue its tokens.
+
+    Admins sign in only through the admin portal (/internal/login); recruiters and
+    hiring managers only through /auth/login. The role is checked after the
+    password, so a wrong password never reveals which portal an email belongs to.
+    """
 
     user = await get_user_by_email(db, email.strip().lower())
 
@@ -38,13 +48,18 @@ async def login_user(
     if not verify_password(password, user.password_hash):
         raise ValueError("Email or password is incorrect.")
 
+    role_name = await get_role_name(db, user.role_id)
+    if admin_portal and role_name != "admin":
+        raise WrongPortalError("This sign-in is for admins only. Please use the normal sign-in page.")
+    if not admin_portal and role_name == "admin":
+        raise WrongPortalError("Admins sign in on the admin sign-in page.")
+
     # The first successful login activates a pending account.
     if user.status == UserStatus.PENDING:
         user.status = UserStatus.ACTIVE
 
     await update_last_login(db, user)
 
-    role_name = await get_role_name(db, user.role_id)
     access_token = create_access_token(user.id, role_name)
     refresh_token = await issue_refresh_token(db, user.id)
 
