@@ -133,7 +133,7 @@ async def accept_invitation(
 
     try:
         user.password_hash = hash_password(password)
-        user.status = UserStatus.ACCEPTED
+        user.status = UserStatus.PENDING
 
         # A successful acceptance makes the invitation single-use.
         user.invite_link = None
