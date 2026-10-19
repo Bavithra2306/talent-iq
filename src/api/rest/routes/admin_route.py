@@ -1,4 +1,6 @@
 
+import uuid
+
 from fastapi import APIRouter, Depends, HTTPException, Response, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -9,7 +11,7 @@ from src.api.rest.schemas.invitation_schema import (
     InvitationResponse,
 )
 from src.api.rest.schemas.login_schema import LoginRequest, LoginResponse
-from src.core.services.invitation_service import create_invitation
+from src.core.services.invitation_service import cancel_invitation, create_invitation
 from src.data.clients.postgres import get_db
 from src.data.models.user import User
 from src.observability.metrics import metrics
@@ -76,3 +78,19 @@ async def invite_user(
 async def request_metrics(_: User = Depends(get_current_admin)):
     """Per-route request statistics (admins only)."""
     return metrics.snapshot()
+
+
+@AdminRouter.delete(
+    "/invitations/{user_id}",
+    response_model=InvitationResponse,
+    summary="Cancel an invitation",
+    description="Withdraws an invitation that was not accepted yet, e.g. one sent to a mistyped email.",
+)
+async def cancel_invite(
+    user_id: uuid.UUID,
+    db: AsyncSession = Depends(get_db),
+    _: User = Depends(get_current_admin),
+):
+    """Cancel a pending invitation (status invite_sent) so it can be sent to the right email."""
+    email = await cancel_invitation(db, user_id)
+    return InvitationResponse(message=f"Invitation to {email} cancelled.")

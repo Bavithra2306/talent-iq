@@ -1,6 +1,7 @@
 
 import hashlib
 import secrets
+import uuid
 from datetime import datetime, timedelta, timezone
 
 from fastapi import HTTPException
@@ -143,3 +144,23 @@ async def accept_invitation(
     except Exception:
         await db.rollback()
         raise
+
+
+async def cancel_invitation(db: AsyncSession, user_id: uuid.UUID) -> str:
+    """Withdraw an invitation that was never accepted (for example a mistyped email).
+
+    Only people still in ``invite_sent`` can be removed this way: they have no
+    password and never signed in, so nothing else refers to them. Returns the email.
+    """
+    user = await db.get(User, user_id)
+    if user is None:
+        raise HTTPException(status_code=404, detail="Invitation not found.")
+    if user.status != UserStatus.INVITE_SENT:
+        raise HTTPException(
+            status_code=409,
+            detail="This person has already accepted the invitation, so it can't be cancelled.",
+        )
+    email = user.email
+    await db.delete(user)
+    await db.commit()
+    return email
