@@ -1,4 +1,5 @@
 
+from pydantic import SecretStr
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -32,6 +33,12 @@ class Settings(BaseSettings):
 
     
     invite_accept_url: str = "http://localhost:3000/accept-invitation"
+
+    # First admin account, created once by `python -m src.data.seed_admin` (see that file).
+    # Set these only in .env.docker (git-ignored); never commit real values.
+    admin_email: str | None = None
+    admin_password: SecretStr | None = None
+    admin_name: str = "Admin"
 
 
     model_config = SettingsConfigDict(
