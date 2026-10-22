@@ -54,7 +54,7 @@ async def login_user(
 
     # Checked after the password, so a wrong password never reveals that an account exists.
     if not user.is_active:
-        raise AccountBlockedError("Your account has been blocked. Please contact your admin.")
+        raise AccountBlockedError("Your account has been blocked by the admin. Please contact your admin to get access again.")
 
     role_name = await get_role_name(db, user.role_id)
     if admin_portal and role_name != "admin":
