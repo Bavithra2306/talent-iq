@@ -22,20 +22,22 @@ async def user_directory(
     """Active users (optionally of one role), e.g. so a recruiter can pick a hiring manager.
 
     Admins also see people who haven't accepted their invitation yet (status
-    "invite_sent"), so they can resend it; everyone else sees only real accounts.
+    "invite_sent"), so they can resend it, and blocked accounts (``blocked``), so they can
+    unblock them; everyone else sees only active accounts.
     """
     query = (
-        select(User.id, User.name, User.email, Role.role, User.status)
+        select(User.id, User.name, User.email, Role.role, User.status, User.is_active)
         .join(Role, Role.id == User.role_id)
-        .where(User.is_active.is_(True))
         .order_by(User.name, User.email)
     )
     if current.role.role != "admin":
-        query = query.where(User.status != UserStatus.INVITE_SENT)
+        # Only admins see blocked accounts and invitations not yet accepted.
+        query = query.where(User.is_active.is_(True), User.status != UserStatus.INVITE_SENT)
     if role:
         query = query.where(Role.role == role)
     rows = await db.execute(query)
     return [
-        DirectoryUser(id=user_id, name=name, email=email, role=role_name, status=user_status.value)
-        for user_id, name, email, role_name, user_status in rows.all()
+        DirectoryUser(id=user_id, name=name, email=email, role=role_name, status=user_status.value,
+                      blocked=not active)
+        for user_id, name, email, role_name, user_status, active in rows.all()
     ]

@@ -10,3 +10,4 @@ class DirectoryUser(BaseModel):
     email: str
     role: str
     status: str
+    blocked: bool = False

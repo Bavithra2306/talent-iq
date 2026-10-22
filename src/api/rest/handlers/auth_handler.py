@@ -26,7 +26,7 @@ from src.api.rest.schemas.reset_password_schema import (
     ResetPasswordRequest,
     ResetPasswordResponse,
 )
-from src.core.services.auth_service import WrongPortalError, login_user
+from src.core.services.auth_service import AccountBlockedError, WrongPortalError, login_user
 from src.core.services.email_service import send_otp_email
 from src.core.services.jwt_service import create_access_token
 from src.core.services.password_service import hash_password, verify_password
@@ -98,7 +98,7 @@ async def login_handler(
             message="Login successful.",
         )
 
-    except WrongPortalError as exc:
+    except (WrongPortalError, AccountBlockedError) as exc:
         await db.rollback()
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,

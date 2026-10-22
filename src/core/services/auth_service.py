@@ -14,6 +14,10 @@ from src.core.services.refresh_token_service import issue_refresh_token
 
 from src.constants.user_status_enum import UserStatus
 
+class AccountBlockedError(Exception):
+    """The password is right but an admin has blocked the account."""
+
+
 class WrongPortalError(Exception):
     """Correct password, but this sign-in page is not for the user's role."""
 
@@ -34,7 +38,7 @@ async def login_user(
 
     user = await get_user_by_email(db, email.strip().lower())
 
-    if user is None or not user.is_active:
+    if user is None:
         raise ValueError("Email or password is incorrect.")
 
     # Invited users must accept the invitation before logging in.
@@ -47,6 +51,10 @@ async def login_user(
 
     if not verify_password(password, user.password_hash):
         raise ValueError("Email or password is incorrect.")
+
+    # Checked after the password, so a wrong password never reveals that an account exists.
+    if not user.is_active:
+        raise AccountBlockedError("Your account has been blocked. Please contact your admin.")
 
     role_name = await get_role_name(db, user.role_id)
     if admin_portal and role_name != "admin":

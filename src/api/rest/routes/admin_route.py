@@ -12,6 +12,7 @@ from src.api.rest.schemas.invitation_schema import (
 )
 from src.api.rest.schemas.login_schema import LoginRequest, LoginResponse
 from src.core.services.invitation_service import cancel_invitation, create_invitation
+from src.core.services.user_admin_service import set_blocked
 from src.data.clients.postgres import get_db
 from src.data.models.user import User
 from src.observability.metrics import metrics
@@ -94,3 +95,33 @@ async def cancel_invite(
     """Cancel a pending invitation (status invite_sent) so it can be sent to the right email."""
     email = await cancel_invitation(db, user_id)
     return InvitationResponse(message=f"Invitation to {email} cancelled.")
+
+
+@AdminRouter.post(
+    "/users/{user_id}/block",
+    response_model=InvitationResponse,
+    summary="Block a user",
+    description="The user can no longer sign in; their sessions are ended. Their data stays.",
+)
+async def block_user(
+    user_id: uuid.UUID,
+    db: AsyncSession = Depends(get_db),
+    admin: User = Depends(get_current_admin),
+):
+    user = await set_blocked(db, user_id, admin, blocked=True)
+    return InvitationResponse(message=f"{user.email} is blocked.")
+
+
+@AdminRouter.post(
+    "/users/{user_id}/unblock",
+    response_model=InvitationResponse,
+    summary="Unblock a user",
+    description="The user can sign in again.",
+)
+async def unblock_user(
+    user_id: uuid.UUID,
+    db: AsyncSession = Depends(get_db),
+    admin: User = Depends(get_current_admin),
+):
+    user = await set_blocked(db, user_id, admin, blocked=False)
+    return InvitationResponse(message=f"{user.email} can sign in again.")
