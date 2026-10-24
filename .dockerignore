@@ -1,0 +1,11 @@
+# Not needed to build the image (and some must never be copied into it)
+.git
+.venv
+.vscode
+__pycache__
+*.pyc
+.pytest_cache
+.ruff_cache
+.env*
+tests
+docs
